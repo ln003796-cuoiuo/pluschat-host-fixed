@@ -27,7 +27,7 @@ foreach ($iterator as $file) {
 
 $requiredFiles = [
     'bootstrap.php', 'config.example.php', 'public/index.php', 'public/password-reset.php',
-    'database/schema.sql', 'database/migrate.php', 'database/cleanup.php',
+    'database/schema.sql', 'database/migrate.php', 'database/cleanup.php', 'database/migrations/010_notification_settings.sql',
     'register/api/Controller.php', 'register/services/RegistrationService.php',
     'register/repositories/RegistrationRepository.php', 'register/validators/RegistrationValidator.php',
     'register/mail/mailconfirm/Mailer.php', 'login/api/Controller.php',
@@ -37,7 +37,7 @@ $requiredFiles = [
     'messages/services/ReactionService.php', 'groups/api/Controller.php',
     'channels/api/Controller.php', 'topics/api/Controller.php', 'topics/services/TopicService.php',
     'files/api/Controller.php', 'files/services/AttachmentService.php',
-    'notifications/api/Controller.php', 'search/api/Controller.php',
+    'notifications/api/Controller.php', 'notifications/repositories/NotificationRepository.php', 'search/api/Controller.php',
     'security/api/Controller.php', 'security/services/DeviceService.php',
     'security/services/TwoFactorService.php', 'admin/api/Controller.php',
     'password/api/Controller.php', 'password/services/PasswordResetService.php',
