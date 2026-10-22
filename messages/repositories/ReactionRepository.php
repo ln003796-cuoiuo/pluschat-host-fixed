@@ -26,10 +26,11 @@ final class PCReactionRepository
         ], $stmt->fetchAll());
     }
 
-    public static function add(PDO $pdo, int $userId, int $messageId, string $reaction): void
+    public static function add(PDO $pdo, int $userId, int $messageId, string $reaction): int
     {
         $stmt = $pdo->prepare('INSERT IGNORE INTO message_reactions (message_id, user_id, reaction) VALUES (?, ?, ?)');
         $stmt->execute([$messageId, $userId, $reaction]);
+        return $stmt->rowCount();
     }
 
     public static function remove(PDO $pdo, int $userId, int $messageId, string $reaction): int
