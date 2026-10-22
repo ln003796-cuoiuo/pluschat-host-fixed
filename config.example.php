@@ -17,6 +17,5 @@ return [
     'app_base_url' => 'https://xn--80avljg2a1c.xn--p1ai',
     'allowed_origins' => [
         'https://xn--80avljg2a1c.xn--p1ai',
-        'https://xn--n1aabel.xn--80avljg2a1c.xn--p1ai',
     ],
 ];
