@@ -3,6 +3,27 @@ declare(strict_types=1);
 
 final class PCNotificationRepository
 {
+    public static function createForUser(PDO $pdo, int $userId, string $kind, array $payload = []): void
+    {
+        $categories = [
+            'direct_messages', 'mentions', 'replies', 'birthdays',
+            'contact_requests', 'reactions', 'group_invites', 'group_messages',
+        ];
+        if (!in_array($kind, $categories, true) || $userId < 1) return;
+
+        $settings = $pdo->prepare('SELECT preferences_json FROM user_notification_settings WHERE user_id = ? LIMIT 1');
+        $settings->execute([$userId]);
+        $storedJson = $settings->fetchColumn();
+        if (is_string($storedJson) && $storedJson !== '') {
+            $stored = json_decode($storedJson, true);
+            if (is_array($stored) && is_bool($stored[$kind] ?? null) && $stored[$kind] === false) return;
+        }
+
+        $encodedPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $pdo->prepare('INSERT INTO notifications (user_id, kind, payload) VALUES (?, ?, ?)')
+            ->execute([$userId, $kind, $encodedPayload]);
+    }
+
     public static function listForUser(PDO $pdo, int $userId, int $limit, ?int $beforeId): array
     {
         $sql = 'SELECT id, kind, payload, read_at, created_at FROM notifications WHERE user_id = ?';
