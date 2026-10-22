@@ -25,21 +25,6 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
     INDEX idx_verify_expiry (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS phone_verification_codes (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    code_hash CHAR(64) NOT NULL,
-    expires_at DATETIME NOT NULL,
-    attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    last_sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_phone_verification_user (user_id),
-    UNIQUE KEY uq_phone_verification_phone (phone),
-    INDEX idx_phone_verification_expiry (expires_at),
-    CONSTRAINT fk_phone_verification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS auth_tokens (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
@@ -82,7 +67,6 @@ CREATE TABLE IF NOT EXISTS messages (
     INDEX idx_messages_conversation_id (conversation_id, id),
     INDEX idx_messages_sender (sender_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- Pluschat extended product features: groups, channels, topics, privacy and devices.
 CREATE TABLE IF NOT EXISTS user_settings (
@@ -283,7 +267,6 @@ CREATE TABLE IF NOT EXISTS user_notification_settings (
     CONSTRAINT fk_user_notification_settings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS group_messages (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     group_id BIGINT UNSIGNED NOT NULL,
@@ -311,7 +294,6 @@ CREATE TABLE IF NOT EXISTS channel_posts (
     CONSTRAINT fk_channel_post_channel FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE,
     CONSTRAINT fk_channel_post_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 CREATE TABLE IF NOT EXISTS api_rate_limits (
     bucket_key CHAR(64) NOT NULL PRIMARY KEY,
