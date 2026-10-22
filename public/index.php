@@ -143,6 +143,7 @@ try {
     require_once dirname(__DIR__) . '/stories/api/Controller.php';
     require_once dirname(__DIR__) . '/password/api/Controller.php';
     require_once dirname(__DIR__) . '/calls/api/Controller.php';
+    require_once dirname(__DIR__) . '/gifs/api/Controller.php';
 
     if (pc_register_dispatch($path, $method)) { exit; }
     if (pc_login_dispatch($path, $method)) { exit; }
@@ -165,6 +166,7 @@ try {
     if (pc_stories_dispatch($path, $method)) { exit; }
     if (pc_password_dispatch($path, $method)) { exit; }
     if (pc_calls_dispatch($path, $method)) { exit; }
+    if (pc_gifs_dispatch($path, $method)) { exit; }
 
     pc_json(404, ['ok' => false, 'error' => 'endpoint_not_found', 'path' => $path]);
 } catch (PDOException $e) {
