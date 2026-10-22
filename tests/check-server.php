@@ -62,7 +62,7 @@ foreach ([
     'friend_requests', 'friendships', 'saved_messages', 'polls', 'poll_options', 'poll_votes',
     'chat_preferences', 'chat_folders', 'chat_folder_items', 'stories', 'story_views',
     'password_reset_tokens', 'message_hidden', 'user_two_factor', 'two_factor_setups',
-    'two_factor_challenges', 'user_avatars', 'calls', 'call_participants', 'call_signals',
+    'two_factor_challenges', 'user_avatars', 'user_notification_settings', 'calls', 'call_participants', 'call_signals',
 ] as $table) {
     if (!preg_match('/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+' . preg_quote($table, '/') . '\b/i', $schema)) {
         $errors[] = 'Missing schema table: ' . $table;
@@ -81,7 +81,7 @@ if (str_contains($bootstrap, 'AND u.phone IS NOT NULL AND u.phone_verified_at IS
 }
 
 $entrySource = (string)file_get_contents($root . '/public/index.php');
-foreach (['pc_register_dispatch', 'pc_login_dispatch', 'pc_calls_dispatch', 'pc_gifs_dispatch'] as $dispatch) {
+foreach (['pc_register_dispatch', 'pc_login_dispatch', 'pc_calls_dispatch', 'pc_gifs_dispatch', 'pc_notifications_dispatch'] as $dispatch) {
     if (!str_contains($entrySource, $dispatch)) $errors[] = 'Main router is missing: ' . $dispatch;
 }
 if (!str_contains($entrySource, "'schema' => 'ready'") || !str_contains($entrySource, "'schema' => 'incomplete'")) {
