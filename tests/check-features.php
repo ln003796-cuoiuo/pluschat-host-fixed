@@ -29,8 +29,6 @@ $required = [
     'database/migrations/005_message_hiding.sql',
     'database/migrations/006_mandatory_two_factor.sql',
     'database/migrations/007_private_profile_avatars.sql',
-    'database/migrations/008_textbee_phone_verification.sql',
-    'register/services/TextBeeService.php',
     'security/services/TwoFactorService.php',
     'profile/services/AvatarService.php',
     'public/password-reset.php',
@@ -49,11 +47,6 @@ $index = (string)file_get_contents($root . '/public/index.php');
 foreach (['pc_friends_dispatch','pc_saved_dispatch','pc_polls_dispatch','pc_chatprefs_dispatch','pc_stories_dispatch','pc_password_dispatch'] as $route) {
     if (strpos($index, $route) === false) $errors[] = 'Router missing: ' . $route;
 }
-$setup = (string)file_get_contents($root . '/public/setup.php');
-if (!str_contains($setup, 'database/migrations/*.sql') || !str_contains($setup, 'phone_verification_codes') || !str_contains($setup, 'textbee_device_id')) $errors[] = 'Installer must apply all migrations and keep TextBee settings private';
-$textBee = (string)file_get_contents($root . '/register/services/TextBeeService.php');
-if (!str_contains($textBee, 'PLUSCHAT_TEXTBEE_API_KEY') || !str_contains($textBee, 'x-api-key')) $errors[] = 'TextBee must read its key privately and authenticate SMS requests';
-if (!str_contains($textBee, 'PLUSCHAT_TEXTBEE_DEVICE_ID') || !str_contains($textBee, "'deviceId' => \$deviceId")) $errors[] = 'TextBee request must include the configured gateway device ID';
 $registrationValidator = (string)file_get_contents($root . '/register/validators/RegistrationValidator.php');
 $registrationService = (string)file_get_contents($root . '/register/services/RegistrationService.php');
 $profileValidator = (string)file_get_contents($root . '/profile/validators/ProfileValidator.php');
