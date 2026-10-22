@@ -22,7 +22,7 @@
 
 ## Что включено
 
-Полные каталоги и файлы модулей: `admin`, `calls`, `channels`, `chatprefs`, `chats`, `files`, `friends`, `groups`, `login`, `messages`, `notifications`, `password`, `polls`, `profile`, `register`, `saved`, `search`, `security`, `stories`, `topics`, `users`, а также `public`, `database`, `docs`, тесты, `.htaccess`, `.gitignore` и пример конфигурации.
+Полные каталоги и файлы модулей: `admin`, `calls`, `channels`, `chatprefs`, `chats`, `files`, `friends`, `gifs`, `groups`, `login`, `messages`, `notifications`, `password`, `polls`, `profile`, `register`, `saved`, `search`, `security`, `stories`, `topics`, `users`, а также `public`, `database`, `docs`, тесты, `.htaccess`, `.gitignore` и пример конфигурации.
 
 В исправленном варианте сохранены обновлённые файлы `bootstrap.php`, `public/index.php`, модули `register` и `login`, `profile/api/Controller.php`, `security/api/Controller.php`, `security/services/TwoFactorService.php` и `tests/check-features.php`.
 
