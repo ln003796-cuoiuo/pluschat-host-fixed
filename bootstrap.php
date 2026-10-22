@@ -40,15 +40,15 @@ if (is_file($legacyConfigFile)) {
         $config = $configBeforeLegacy;
 
         $legacyAliases = [
-            'db_host' => ['db_host', 'dbHost', 'DB_HOST', 'host', 'hostname', 'servername'],
-            'db_name' => ['db_name', 'dbName', 'DB_NAME', 'dbname', 'database'],
-            'db_user' => ['db_user', 'dbUser', 'DB_USER', 'DB_USERNAME', 'username', 'db_username', 'user'],
-            'db_password' => ['db_password', 'dbPassword', 'DB_PASSWORD', 'password', 'db_pass', 'dbPass'],
-            'mail_from' => ['mail_from', 'MAIL_FROM', 'email_from'],
+            'db_host' => ['db_host', 'dbHost', 'DB_HOST', 'DB_SERVER', 'host', 'hostname', 'servername', 'dbhost', 'databaseHost'],
+            'db_name' => ['db_name', 'dbName', 'DB_NAME', 'DB_DATABASE', 'dbname', 'database', 'databaseName'],
+            'db_user' => ['db_user', 'dbUser', 'DB_USER', 'DB_USERNAME', 'username', 'db_username', 'dbuser', 'databaseUser', 'user'],
+            'db_password' => ['db_password', 'dbPassword', 'DB_PASSWORD', 'DB_PASS', 'password', 'db_pass', 'dbPass', 'dbpass', 'databasePassword'],
+            'mail_from' => ['mail_from', 'MAIL_FROM', 'MAIL_FROM_ADDRESS', 'email_from', 'senderEmail'],
             'app_base_url' => ['app_base_url', 'APP_BASE_URL', 'base_url'],
             'allowed_origins' => ['allowed_origins', 'ALLOWED_ORIGINS'],
-            'giphy_api_key' => ['giphy_api_key', 'giphyApiKey', 'GIPHY_API_KEY', 'giphy_key', 'giphyKey'],
-            'app_secret' => ['app_secret', 'appSecret', 'APP_SECRET'],
+            'giphy_api_key' => ['giphy_api_key', 'giphyApiKey', 'GIPHY_API_KEY', 'giphy_key', 'giphyKey', 'giphy'],
+            'app_secret' => ['app_secret', 'appSecret', 'APP_SECRET', 'APP_KEY', 'secretKey'],
         ];
         foreach ($legacyAliases as $configKey => $aliases) {
             if (isset($config[$configKey]) && $config[$configKey] !== '') {
