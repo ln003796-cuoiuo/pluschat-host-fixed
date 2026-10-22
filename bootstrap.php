@@ -22,7 +22,13 @@ if (is_file($legacyConfigFile)) {
         && (string)$config['db_name'] !== ''
         && (string)$config['db_user'] !== ''
         && (string)$config['db_password'] !== '';
-    if (!$hasDatabaseSettings) {
+    $needsLegacySettings = !$hasDatabaseSettings
+        || empty($config['giphy_api_key'])
+        || empty($config['mail_from'])
+        || empty($config['app_base_url'])
+        || empty($config['allowed_origins'])
+        || empty($config['app_secret']);
+    if ($needsLegacySettings) {
         $configBeforeLegacy = $config;
         $legacyResult = require $legacyConfigFile;
         $legacyVariables = get_defined_vars();
