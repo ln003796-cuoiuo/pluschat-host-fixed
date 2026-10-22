@@ -32,7 +32,7 @@
 - `POST /api/v1/messages/{id}/edit`, `/delete`, `/reactions`, `/reactions/remove` — редактирование, удаление и реакции.
 - `POST /api/v1/conversations/{id}/read` — отметка сообщений прочитанными.
 - `POST /api/v1/messages/{id}/attachments`, `GET /api/v1/attachments/{id}`, `POST /api/v1/attachments/{id}/delete` — вложения. Сервер принимает только клиентски зашифрованные байты с маркером `PCF1` и версией `pc-e2ee-v1`.
-- Группы: `GET/POST /api/v1/groups`, `GET /api/v1/groups/discover`, `POST /api/v1/groups/{id}/join`, `/leave`, `GET/POST /api/v1/groups/{id}/messages`.
+- Группы: `GET/POST /api/v1/groups`, `GET /api/v1/groups/discover`, `POST /api/v1/groups/{id}/join`, `/leave`, `/invite` (body: `user_id`; owner/admin/moderator only), `GET/POST /api/v1/groups/{id}/messages`.
 - Каналы: `GET/POST /api/v1/channels`, `GET /api/v1/channels/discover`, `POST /api/v1/channels/{id}/subscribe`, `GET/POST /api/v1/channels/{id}/posts`.
 - Темы: `GET/POST /api/v1/groups/{id}/topics`, `GET/POST /api/v1/channels/{id}/topics`, `GET/POST /api/v1/topics/{id}/messages`; доступ зависит от членства и роли.
 - Друзья, сохранённые сообщения, опросы, папки чатов, закрепление/архив/отключение уведомлений, истории и уведомления реализованы отдельными PHP-модулями и используют MySQL.
@@ -52,6 +52,7 @@
 ## Настройки уведомлений
 
 - `GET /api/v1/notification-settings` — возвращает значения категорий и режим предпросмотра.
+- Новые личные сообщения, запросы в друзья, сообщения групп/каналов и реакции создают уведомления без текста сообщений; выключенная категория подавляет новые события.
 - `POST /api/v1/notification-settings` принимает объект `categories` с булевыми значениями для `direct_messages`, `mentions`, `replies`, `birthdays`, `contact_requests`, `reactions`, `group_invites`, `group_messages`, и необязательный `preview_mode`: `full`, `sender` или `hidden`.
 - Для существующей базы примените миграцию `database/migrations/010_notification_settings.sql` через PHP CLI.
 
