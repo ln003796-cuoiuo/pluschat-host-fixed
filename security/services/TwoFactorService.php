@@ -120,7 +120,7 @@ final class PCTwoFactorService
 
     public static function upgradeSetupToken(PDO $pdo, int $userId, string $authorization): array
     {
-        if (!preg_match('/^Bearer\\s+([a-f0-9]{64})$/i', $authorization, $matches)) {
+        if (!preg_match('/^Bearer\s+([a-f0-9]{64})$/i', $authorization, $matches)) {
             throw new RuntimeException('Invalid setup token');
         }
         $oldHash = hash('sha256', $matches[1]);
