@@ -13,9 +13,9 @@ if (is_file($configFile)) {
     if (is_array($loadedConfig)) {
         $config = $loadedConfig;
     }
-} else {
-    $legacyConfigFile = __DIR__ . '/confirm.php';
-    if (is_file($legacyConfigFile)) {
+}
+$legacyConfigFile = __DIR__ . '/confirm.php';
+if ($config === [] && is_file($legacyConfigFile)) {
         $legacyResult = require $legacyConfigFile;
         if (is_array($legacyResult)) {
             $config = $legacyResult;
@@ -67,7 +67,7 @@ function pc_db(): PDO {
     }
     $host = (string) pc_config('db_host', 'localhost');
     $name = (string) pc_config('db_name', 'pluschat');
-    $user = (string) pc_config('db_user', 'admin');
+    $user = (string) pc_config('db_user', 'Admin');
     $password = (string) pc_config('db_password', '');
     if ($password === '') {
         throw new RuntimeException('Database password is not configured on the server.');
