@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../repositories/FriendRepository.php';
+require_once dirname(__DIR__, 2) . '/notifications/repositories/NotificationRepository.php';
 
 final class PCFriendService
 {
@@ -43,6 +44,11 @@ final class PCFriendService
             $pdo->prepare("INSERT INTO friend_requests (requester_id, recipient_id, status) VALUES (?, ?, 'pending')")->execute([$userId, $targetId]);
             $id = (int)$pdo->lastInsertId();
         }
+        PCNotificationRepository::createForUser($pdo, (int)$targetId, 'contact_requests', [
+            'request_id' => (string)$id,
+            'user_id' => (string)$userId,
+            'status' => 'pending',
+        ]);
         return ['status' => 201, 'body' => ['ok' => true, 'request_id' => (string)$id, 'status' => 'pending']];
     }
 
@@ -72,6 +78,11 @@ final class PCFriendService
             } else {
                 $pdo->prepare("UPDATE friend_requests SET status = 'declined', updated_at = UTC_TIMESTAMP() WHERE id = ?")->execute([$requestId]);
             }
+            PCNotificationRepository::createForUser($pdo, $peerId, 'contact_requests', [
+                'request_id' => (string)$requestId,
+                'user_id' => (string)$userId,
+                'status' => $action === 'accept' ? 'accepted' : 'declined',
+            ]);
             $pdo->commit();
             return ['status' => 200, 'body' => ['ok' => true, 'request_id' => (string)$requestId, 'status' => $action === 'accept' ? 'accepted' : 'declined']];
         } catch (Throwable $e) {
