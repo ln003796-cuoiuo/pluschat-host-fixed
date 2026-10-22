@@ -29,6 +29,7 @@ $required = [
     'database/migrations/005_message_hiding.sql',
     'database/migrations/006_mandatory_two_factor.sql',
     'database/migrations/007_private_profile_avatars.sql',
+    'database/migrations/010_notification_settings.sql',
     'security/services/TwoFactorService.php',
     'profile/services/AvatarService.php',
     'public/password-reset.php',
@@ -46,7 +47,7 @@ foreach (['friend_requests','friendships','saved_messages','polls','poll_options
     if (strpos($schema, 'CREATE TABLE IF NOT EXISTS ' . $table) === false) $errors[] = 'Missing table: ' . $table;
 }
 $index = (string)file_get_contents($root . '/public/index.php');
-foreach (['pc_friends_dispatch','pc_saved_dispatch','pc_polls_dispatch','pc_chatprefs_dispatch','pc_stories_dispatch','pc_password_dispatch', 'pc_gifs_dispatch'] as $route) {
+foreach (['pc_friends_dispatch','pc_saved_dispatch','pc_polls_dispatch','pc_chatprefs_dispatch','pc_stories_dispatch','pc_password_dispatch', 'pc_gifs_dispatch', 'pc_notifications_dispatch'] as $route) {
     if (strpos($index, $route) === false) $errors[] = 'Router missing: ' . $route;
 }
 $registrationValidator = (string)file_get_contents($root . '/register/validators/RegistrationValidator.php');
@@ -80,6 +81,8 @@ if (!str_contains($twoFactorRegex, "Bearer\\s+")) $errors[] = '2FA setup must ac
 $giphyService = (string)file_get_contents($root . '/gifs/services/GiphyService.php');
 if (!str_contains($giphyService, "pc_config('giphy_api_key'")) $errors[] = 'GIPHY key must be read from private server configuration';
 if (!str_contains($giphyService, 'gif_provider_unavailable') || !str_contains($giphyService, "'preview_url'")) $errors[] = 'GIPHY search must return safe previews and handle provider errors';
+$notificationController = (string)file_get_contents($root . '/notifications/api/Controller.php');
+if (!str_contains($notificationController, '/api/v1/notification-settings') || !str_contains($notificationController, 'preview_mode')) $errors[] = 'Per-category notification and preview settings API is missing';
 $configExample = (string)file_get_contents($root . '/config.example.php');
 if (!str_contains($configExample, "'giphy_api_key' => ''") || str_contains($configExample, 'textbee_api_key')) $errors[] = 'Example configuration must support GIPHY and not require SMS';
 if (str_contains($bootstrapAuth, 'AND u.phone IS NOT NULL AND u.phone_verified_at IS NOT NULL')) $errors[] = 'Bearer API authentication must not require a verified phone number';
