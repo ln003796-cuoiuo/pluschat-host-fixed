@@ -1,4 +1,5 @@
 /config.php
+/confirm.php
 /.env
 /vendor/
 /storage/*
