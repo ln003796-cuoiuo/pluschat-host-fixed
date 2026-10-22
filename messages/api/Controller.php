@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/services/ReactionService.php';
+require_once dirname(__DIR__, 2) . '/notifications/repositories/NotificationRepository.php';
 
 /* Conversation message history and read receipts. */
 function pc_messages_dispatch(string $path, string $method): bool
@@ -59,10 +60,28 @@ function pc_messages_dispatch(string $path, string $method): bool
                         $blocked->execute([$user['id'], $user['id'], $conversationId, $user['id']]);
                         if ($blocked->fetchColumn()) pc_json(403, ['ok' => false, 'error' => 'messaging_blocked']);
                     }
-                    $stmt = pc_db()->prepare('INSERT INTO messages (conversation_id, sender_id, body, body_encrypted, encryption_version) VALUES (?, ?, ?, 1, ?)');
-                    $stmt->execute([$conversationId, $user['id'], $envelope['body'], $envelope['version']]);
+                    $pdo = pc_db();
+                    $pdo->beginTransaction();
+                    try {
+                        $stmt = $pdo->prepare('INSERT INTO messages (conversation_id, sender_id, body, body_encrypted, encryption_version) VALUES (?, ?, ?, 1, ?)');
+                        $stmt->execute([$conversationId, $user['id'], $envelope['body'], $envelope['version']]);
+                        $messageId = (int)$pdo->lastInsertId();
+                        $recipients = $pdo->prepare('SELECT user_id FROM conversation_members WHERE conversation_id = ? AND user_id <> ?');
+                        $recipients->execute([$conversationId, $user['id']]);
+                        foreach ($recipients->fetchAll() as $recipient) {
+                            PCNotificationRepository::createForUser($pdo, (int)$recipient['user_id'], 'direct_messages', [
+                                'conversation_id' => (string)$conversationId,
+                                'message_id' => (string)$messageId,
+                                'sender_id' => (string)$user['id'],
+                            ]);
+                        }
+                        $pdo->commit();
+                    } catch (Throwable $e) {
+                        if ($pdo->inTransaction()) $pdo->rollBack();
+                        throw $e;
+                    }
                     pc_json(201, ['ok' => true, 'message' => [
-                        'id' => (string)pc_db()->lastInsertId(), 'conversation_id' => (string)$conversationId,
+                        'id' => (string)$messageId, 'conversation_id' => (string)$conversationId,
                         'sender_id' => (string)$user['id'], 'body' => $envelope['body'], 'encrypted' => true,
                         'encryption_version' => $envelope['version'], 'created_at' => gmdate('Y-m-d H:i:s'),
                     ]]);
