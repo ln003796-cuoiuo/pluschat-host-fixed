@@ -33,8 +33,8 @@ final class PCReactionService
         $senderStmt = $pdo->prepare('SELECT sender_id FROM messages WHERE id = ? LIMIT 1');
         $senderStmt->execute([$messageId]);
         $senderId = (int)$senderStmt->fetchColumn();
-        PCReactionRepository::add($pdo, $userId, $messageId, $reaction);
-        if ($senderId > 0 && $senderId !== $userId) {
+        $added = PCReactionRepository::add($pdo, $userId, $messageId, $reaction);
+        if ($added > 0 && $senderId > 0 && $senderId !== $userId) {
             PCNotificationRepository::createForUser($pdo, $senderId, 'reactions', [
                 'message_id' => (string)$messageId,
                 'user_id' => (string)$userId,
