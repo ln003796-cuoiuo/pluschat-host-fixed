@@ -144,6 +144,11 @@ foreach ([
     if (!str_contains($source, "'" . $kind . "'")) $errors[] = 'Notification event is not wired for: ' . $relative;
 }
 
+$groupSource = (string)file_get_contents($root . '/groups/api/Controller.php');
+if (!str_contains($groupSource, '/invite') || !str_contains($groupSource, 'group_invites')) {
+    $errors[] = 'Permission-checked group invites and invite notifications are missing';
+}
+
 $rateLimitedWrites = [
     'messages/api/Controller.php' => 'message-send',
     'groups/api/Controller.php' => 'group-message-send',
