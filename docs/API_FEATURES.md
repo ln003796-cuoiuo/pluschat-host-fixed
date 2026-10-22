@@ -49,6 +49,12 @@
 - `limit` ограничен 1–25, `offset` — 0–499, частота — 30 запросов в минуту на IP.
 - Ответ `results` содержит `id`, `title`, `url`, `preview_url`, `width`, `height`. Без ключа возвращается `gif_search_not_configured`; ошибки провайдера не раскрывают секреты.
 
+## Настройки уведомлений
+
+- `GET /api/v1/notification-settings` — возвращает значения категорий и режим предпросмотра.
+- `POST /api/v1/notification-settings` принимает объект `categories` с булевыми значениями для `direct_messages`, `mentions`, `replies`, `birthdays`, `contact_requests`, `reactions`, `group_invites`, `group_messages`, и необязательный `preview_mode`: `full`, `sender` или `hidden`.
+- Для существующей базы примените миграцию `database/migrations/010_notification_settings.sql` через PHP CLI.
+
 ## Восстановление пароля
 
 - `POST /api/v1/auth/password/forgot` принимает email; ответ не раскрывает, существует ли аккаунт.
