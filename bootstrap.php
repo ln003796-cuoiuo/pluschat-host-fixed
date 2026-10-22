@@ -2,9 +2,9 @@
 declare(strict_types=1);
 
 /*
- * Prefer the standard private config.php. For installations that still keep
- * private settings in confirm.php, accept a returned config array or common
- * legacy variable names. Never copy either file or its secrets to Git.
+ * Prefer the private config.php. Legacy confirm.php is supported for hosts
+ * that already keep the private connection settings there. Never commit either
+ * file or any production secret.
  */
 $configFile = __DIR__ . '/config.php';
 $config = [];
@@ -14,16 +14,25 @@ if (is_file($configFile)) {
         $config = $loadedConfig;
     }
 }
-$legacyConfigFile = __DIR__ . '/confirm.php';
-if ($config === [] && is_file($legacyConfigFile)) {
-        $legacyResult = require $legacyConfigFile;
-        if (is_array($legacyResult)) {
-            $config = $legacyResult;
-        } elseif (isset($config) && is_array($config) && $config !== []) {
-            // A legacy file may assign a $config array instead of returning it.
-        }
 
+$legacyConfigFile = __DIR__ . '/confirm.php';
+if (is_file($legacyConfigFile)) {
+    $hasDatabaseSettings = isset($config['db_host'], $config['db_name'], $config['db_user'], $config['db_password'])
+        && (string)$config['db_host'] !== ''
+        && (string)$config['db_name'] !== ''
+        && (string)$config['db_user'] !== ''
+        && (string)$config['db_password'] !== '';
+    if (!$hasDatabaseSettings) {
+        $configBeforeLegacy = $config;
+        $legacyResult = require $legacyConfigFile;
         $legacyVariables = get_defined_vars();
+        $legacyArray = is_array($legacyResult) ? $legacyResult : [];
+        if (isset($legacyVariables['config']) && is_array($legacyVariables['config'])) {
+            $legacyArray = array_merge($legacyArray, $legacyVariables['config']);
+        }
+        $legacySource = array_merge($legacyArray, $legacyVariables);
+        $config = $configBeforeLegacy;
+
         $legacyAliases = [
             'db_host' => ['db_host', 'dbHost', 'DB_HOST', 'host', 'hostname', 'servername'],
             'db_name' => ['db_name', 'dbName', 'DB_NAME', 'dbname', 'database'],
@@ -33,20 +42,22 @@ if ($config === [] && is_file($legacyConfigFile)) {
             'app_base_url' => ['app_base_url', 'APP_BASE_URL', 'base_url'],
             'allowed_origins' => ['allowed_origins', 'ALLOWED_ORIGINS'],
             'giphy_api_key' => ['giphy_api_key', 'giphyApiKey', 'GIPHY_API_KEY', 'giphy_key', 'giphyKey'],
+            'app_secret' => ['app_secret', 'appSecret', 'APP_SECRET'],
         ];
         foreach ($legacyAliases as $configKey => $aliases) {
-            if (array_key_exists($configKey, $config) && $config[$configKey] !== '') {
+            if (isset($config[$configKey]) && $config[$configKey] !== '') {
                 continue;
             }
             foreach ($aliases as $alias) {
-                if (array_key_exists($alias, $legacyVariables)
-                    && (is_string($legacyVariables[$alias]) || is_array($legacyVariables[$alias]))
-                    && $legacyVariables[$alias] !== '') {
-                    $config[$configKey] = $legacyVariables[$alias];
+                if (array_key_exists($alias, $legacySource)
+                    && (is_string($legacySource[$alias]) || is_array($legacySource[$alias]))
+                    && $legacySource[$alias] !== '') {
+                    $config[$configKey] = $legacySource[$alias];
                     break;
                 }
             }
         }
+    }
 }
 
 function pc_config(string $key, mixed $default = null): mixed {
@@ -174,7 +185,6 @@ function pc_token_user(bool $allowTwoFactorSetup = false): array {
     }
     return $user;
 }
-
 
 function pc_rate_limit(string $bucket, int $limit, int $windowSeconds): void {
     $ip = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
