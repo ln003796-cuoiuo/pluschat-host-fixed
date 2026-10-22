@@ -26,7 +26,8 @@ php database/migrate.php
 - `005_message_hiding.sql` — скрытие сообщений;
 - `006_mandatory_two_factor.sql` — таблицы 2FA;
 - `007_private_profile_avatars.sql` — аватары/профиль;
-- `009_calls_signaling.sql` — сигнализация аудио-/видеозвонков на основном сервере.
+- `009_calls_signaling.sql` — сигнализация аудио-/видеозвонков на основном сервере;
+- `010_notification_settings.sql` — настройки уведомлений по категориям и режим предпросмотра.
 
 Для новой пустой базы импортируйте `database/schema.sql`, затем выполните миграции через PHP CLI. Не импортируйте схему поверх существующей базы.
 
