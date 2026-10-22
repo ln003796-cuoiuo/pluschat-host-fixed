@@ -9,7 +9,7 @@ RewriteRule ^(?:admin|password|calls|channels|chats|chatprefs|files|stories|frie
 # Keep source, configuration and database files out of public access.
 RewriteRule ^(?:bootstrap\.php|config(?:\.example)?\.php|confirm\.php|database(?:/|$)|storage(?:/|$)|\.git(?:/|$)) - [F,L,NC]
 
-# Expose the one-time installer and password recovery page.
+# Expose only the password recovery page.
 RewriteRule ^password-reset\.php$ public/password-reset.php [QSA,L]
 
 # Route API URLs to the single PHP entry point.
