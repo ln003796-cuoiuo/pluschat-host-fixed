@@ -78,8 +78,9 @@ function pc_groups_dispatch(string $path, string $method): bool
 
         $pdo->beginTransaction();
         try {
-            $pdo->prepare("INSERT IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, 'member')")->execute([$groupId, $targetId]);
-            if ($pdo->rowCount() === 0) {
+            $insertMember = $pdo->prepare("INSERT IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, 'member')");
+            $insertMember->execute([$groupId, $targetId]);
+            if ($insertMember->rowCount() === 0) {
                 $pdo->rollBack();
                 pc_json(409, ['ok' => false, 'error' => 'already_group_member']);
             }
