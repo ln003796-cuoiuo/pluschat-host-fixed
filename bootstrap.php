@@ -47,7 +47,6 @@ if ($config === [] && is_file($legacyConfigFile)) {
                 }
             }
         }
-    }
 }
 
 function pc_config(string $key, mixed $default = null): mixed {
