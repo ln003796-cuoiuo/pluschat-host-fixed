@@ -113,7 +113,7 @@ function pc_encrypted_envelope(mixed $body): ?array {
 
 function pc_token_user(bool $allowTwoFactorSetup = false): array {
     $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-    if (!preg_match('/^Bearer\\s+([a-f0-9]{64})$/i', $header, $matches)) {
+    if (!preg_match('/^Bearer\s+([a-f0-9]{64})$/i', $header, $matches)) {
         pc_json(401, ['ok' => false, 'error' => 'authentication_required']);
     }
     $stmt = pc_db()->prepare(
