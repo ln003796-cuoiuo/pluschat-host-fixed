@@ -1,4 +1,4 @@
--- Mandatory TOTP second factor. Secrets are encrypted with a server-only master key.
+-- Optional TOTP second factor. Secrets are encrypted with a server-only master key.
 CREATE TABLE IF NOT EXISTS user_two_factor (
     user_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
     secret_ciphertext TEXT NOT NULL,
