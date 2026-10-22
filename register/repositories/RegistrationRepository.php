@@ -73,29 +73,6 @@ final class PCRegistrationRepository
         return true;
     }
 
-    public static function confirmPhoneCode(PDO $pdo, string $phone, string $code): bool
-    {
-        if (!preg_match('/^[0-9]{6}$/', $code)) return false;
-        $stmt = $pdo->prepare('SELECT id, user_id, code_hash, attempts FROM phone_verification_codes WHERE phone = ? AND expires_at > UTC_TIMESTAMP() LIMIT 1');
-        $stmt->execute([$phone]);
-        $record = $stmt->fetch();
-        if (!$record || (int)$record['attempts'] >= 5) return false;
-        if (!hash_equals((string)$record['code_hash'], hash('sha256', $phone . '|' . $code))) {
-            $pdo->prepare('UPDATE phone_verification_codes SET attempts = attempts + 1 WHERE id = ?')->execute([$record['id']]);
-            return false;
-        }
-        $pdo->beginTransaction();
-        try {
-            $pdo->prepare('UPDATE users SET phone_verified_at = UTC_TIMESTAMP() WHERE id = ? AND phone = ?')->execute([$record['user_id'], $phone]);
-            $pdo->prepare('DELETE FROM phone_verification_codes WHERE user_id = ?')->execute([$record['user_id']]);
-            $pdo->commit();
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            throw $e;
-        }
-        return true;
-    }
-
     public static function unverifiedByEmail(PDO $pdo, string $email): ?array
     {
         $stmt = $pdo->prepare('SELECT id, email, username, first_name, email_verified_at FROM users WHERE email = ? LIMIT 1');
@@ -116,23 +93,5 @@ final class PCRegistrationRepository
         return $code;
     }
 
-    /** Atomically rotate a phone code only after a 60-second resend cooldown. */
-    public static function replacePhoneCode(PDO $pdo, string $phone): ?array
-    {
-        $stmt = $pdo->prepare('SELECT id, user_id, phone_verified_at FROM users WHERE phone = ? LIMIT 1');
-        $stmt->execute([$phone]);
-        $user = $stmt->fetch();
-        if (!$user || !empty($user['phone_verified_at'])) return null;
 
-        $current = $pdo->prepare('SELECT last_sent_at FROM phone_verification_codes WHERE user_id = ? LIMIT 1');
-        $current->execute([$user['id']]);
-        $last = $current->fetchColumn();
-        if ($last && strtotime((string)$last . ' UTC') > time() - 60) return ['cooldown' => true];
-
-        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $pdo->prepare('DELETE FROM phone_verification_codes WHERE user_id = ?')->execute([$user['id']]);
-        $pdo->prepare('INSERT INTO phone_verification_codes (user_id, phone, code_hash, expires_at, attempts, last_sent_at) VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE), 0, UTC_TIMESTAMP())')
-            ->execute([$user['id'], $phone, hash('sha256', $phone . '|' . $code)]);
-        return ['code' => $code, 'user_id' => (int)$user['id']];
-    }
 }
