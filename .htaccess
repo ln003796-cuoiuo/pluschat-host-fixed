@@ -7,7 +7,7 @@ RewriteEngine On
 RewriteRule ^(?:admin|password|calls|channels|chats|chatprefs|files|stories|friends|groups|login|messages|notifications|polls|profile|register|saved|search|security|topics|users|tests|api/integrations)/.*\.php$ - [F,L,NC]
 
 # Keep source, configuration and database files out of public access.
-RewriteRule ^(?:bootstrap\.php|config(?:\.example)?\.php|database(?:/|$)|storage(?:/|$)|\.git(?:/|$)) - [F,L,NC]
+RewriteRule ^(?:bootstrap\.php|config(?:\.example)?\.php|confirm\.php|database(?:/|$)|storage(?:/|$)|\.git(?:/|$)) - [F,L,NC]
 
 # Expose the one-time installer and password recovery page.
 RewriteRule ^password-reset\.php$ public/password-reset.php [QSA,L]
@@ -20,6 +20,6 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ public/index.php [QSA,L]
 
-<FilesMatch "^(?:config(?:\.example)?\.php|bootstrap\.php|\.env|composer\.(?:json|lock))$">
+<FilesMatch "^(?:config(?:\.example)?\.php|confirm\.php|bootstrap\.php|\.env|composer\.(?:json|lock))$">
     Require all denied
 </FilesMatch>
