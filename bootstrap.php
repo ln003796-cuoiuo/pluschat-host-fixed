@@ -25,14 +25,14 @@ if (is_file($configFile)) {
 
         $legacyVariables = get_defined_vars();
         $legacyAliases = [
-            'db_host' => ['db_host', 'DB_HOST', 'host', 'hostname', 'servername'],
-            'db_name' => ['db_name', 'DB_NAME', 'dbname', 'database'],
-            'db_user' => ['db_user', 'DB_USER', 'username', 'db_username'],
-            'db_password' => ['db_password', 'DB_PASSWORD', 'password', 'db_pass'],
+            'db_host' => ['db_host', 'dbHost', 'DB_HOST', 'host', 'hostname', 'servername'],
+            'db_name' => ['db_name', 'dbName', 'DB_NAME', 'dbname', 'database'],
+            'db_user' => ['db_user', 'dbUser', 'DB_USER', 'DB_USERNAME', 'username', 'db_username', 'user'],
+            'db_password' => ['db_password', 'dbPassword', 'DB_PASSWORD', 'password', 'db_pass', 'dbPass'],
             'mail_from' => ['mail_from', 'MAIL_FROM', 'email_from'],
             'app_base_url' => ['app_base_url', 'APP_BASE_URL', 'base_url'],
             'allowed_origins' => ['allowed_origins', 'ALLOWED_ORIGINS'],
-            'giphy_api_key' => ['giphy_api_key', 'GIPHY_API_KEY', 'giphy_key'],
+            'giphy_api_key' => ['giphy_api_key', 'giphyApiKey', 'GIPHY_API_KEY', 'giphy_key', 'giphyKey'],
         ];
         foreach ($legacyAliases as $configKey => $aliases) {
             if (array_key_exists($configKey, $config) && $config[$configKey] !== '') {
