@@ -7,8 +7,38 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/notifications/repositories/NotificationRepository.php';
 
 $pdo = pc_db();
+
+$birthdaySql = "SELECT DISTINCT r.id AS recipient_id, b.id AS birthday_user_id
+    FROM users b
+    JOIN user_settings bs ON bs.user_id = b.id
+    JOIN friendships f ON f.friend_id = b.id
+    JOIN users r ON r.id = f.user_id
+    WHERE r.id <> b.id
+      AND b.email_verified_at IS NOT NULL
+      AND b.birth_date IS NOT NULL
+      AND DATE_FORMAT(b.birth_date, '%m-%d') = DATE_FORMAT(UTC_DATE(), '%m-%d')
+      AND bs.show_birth_date = 1
+      AND bs.profile_visibility <> 'nobody'
+      AND NOT EXISTS (SELECT 1 FROM user_blocks x WHERE (x.user_id = r.id AND x.blocked_user_id = b.id) OR (x.user_id = b.id AND x.blocked_user_id = r.id))
+      AND NOT EXISTS (
+          SELECT 1 FROM notifications n
+          WHERE n.user_id = r.id AND n.kind = 'birthdays'
+            AND JSON_UNQUOTE(JSON_EXTRACT(n.payload, '$.birthday_user_id')) = CAST(b.id AS CHAR)
+            AND JSON_UNQUOTE(JSON_EXTRACT(n.payload, '$.birthday_date')) = DATE_FORMAT(UTC_DATE(), '%Y-%m-%d')
+      )";
+$birthdayStmt = $pdo->query($birthdaySql);
+$birthdayCount = 0;
+foreach ($birthdayStmt->fetchAll() as $birthday) {
+    PCNotificationRepository::createForUser($pdo, (int)$birthday['recipient_id'], 'birthdays', [
+        'birthday_user_id' => (string)$birthday['birthday_user_id'],
+        'birthday_date' => gmdate('Y-m-d'),
+    ]);
+    $birthdayCount++;
+}
+echo 'Birthday reminders considered: ' . $birthdayCount . PHP_EOL;
 $jobs = [
     'expired stories' => 'DELETE FROM stories WHERE expires_at <= UTC_TIMESTAMP()',
     'expired password reset tokens' => 'DELETE FROM password_reset_tokens WHERE expires_at <= UTC_TIMESTAMP()',
