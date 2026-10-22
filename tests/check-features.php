@@ -71,6 +71,8 @@ if (!str_contains($twoFactorService, 'sodium_crypto_secretbox') || !str_contains
 $loginService = (string)file_get_contents($root . '/login/services/LoginService.php');
 if (str_contains($loginService, "'error' => 'phone_required'") || str_contains($loginService, "'error' => 'phone_not_verified'")) $errors[] = 'Login must not require phone or SMS verification';
 $bootstrapAuth = (string)file_get_contents($root . '/bootstrap.php');
+if (!str_contains($bootstrapAuth, "Bearer\\s+")) $errors[] = 'Bearer token Authorization header must accept whitespace after Bearer';
+if (!str_contains($bootstrapAuth, 'legacyConfigFile')) $errors[] = 'Legacy confirm.php configuration fallback is missing';
 if (str_contains($bootstrapAuth, 'AND u.phone IS NOT NULL AND u.phone_verified_at IS NOT NULL')) $errors[] = 'Bearer API authentication must not require a verified phone number';
 if (!str_contains($loginService, 'requires_2fa')) $errors[] = 'Optional 2FA challenge flow is missing';
 $securityController = (string)file_get_contents($root . '/security/api/Controller.php');
