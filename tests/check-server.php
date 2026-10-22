@@ -154,6 +154,7 @@ if (!str_contains($groupSource, '/invite') || !str_contains($groupSource, 'group
 
 $rateLimitedWrites = [
     'messages/api/Controller.php' => 'message-send',
+    'groups/api/Controller.php' => 'group-invite',
     'groups/api/Controller.php' => 'group-message-send',
     'channels/api/Controller.php' => 'channel-post-send',
     'topics/api/Controller.php' => 'topic-message-send',
