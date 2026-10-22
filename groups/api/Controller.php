@@ -54,6 +54,48 @@ function pc_groups_dispatch(string $path, string $method): bool
                 pc_json(200, ['ok' => true, 'topics' => $stmt->fetchAll()]);
             }
 
+    if (preg_match('#^/api/v1/groups/([0-9]+)/invite$#', $path, $matches) && $method === 'POST') {
+        $user = pc_require_verified_user();
+        pc_rate_limit('group-invite', 30, 3600);
+        $groupId = (int)$matches[1];
+        $data = pc_input();
+        $targetId = filter_var($data['user_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (!$targetId || $targetId === (int)$user['id']) pc_json(422, ['ok' => false, 'error' => 'invalid_invite_target']);
+
+        $pdo = pc_db();
+        $roleStmt = $pdo->prepare('SELECT role FROM group_members WHERE group_id = ? AND user_id = ? LIMIT 1');
+        $roleStmt->execute([$groupId, $user['id']]);
+        $role = $roleStmt->fetchColumn();
+        if ($role === false) pc_json(404, ['ok' => false, 'error' => 'group_not_found']);
+        if (!in_array($role, ['owner', 'admin', 'moderator'], true)) pc_json(403, ['ok' => false, 'error' => 'insufficient_role']);
+
+        $target = $pdo->prepare("SELECT id FROM users WHERE id = ? AND email_verified_at IS NOT NULL AND LEFT(username, 11) <> 'pc_pending_' LIMIT 1");
+        $target->execute([$targetId]);
+        if (!$target->fetchColumn()) pc_json(404, ['ok' => false, 'error' => 'user_not_found']);
+        $blocked = $pdo->prepare('SELECT 1 FROM user_blocks WHERE (user_id = ? AND blocked_user_id = ?) OR (user_id = ? AND blocked_user_id = ?) LIMIT 1');
+        $blocked->execute([$user['id'], $targetId, $targetId, $user['id']]);
+        if ($blocked->fetchColumn()) pc_json(403, ['ok' => false, 'error' => 'group_invite_not_allowed']);
+
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("INSERT IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, 'member')")->execute([$groupId, $targetId]);
+            if ($pdo->rowCount() === 0) {
+                $pdo->rollBack();
+                pc_json(409, ['ok' => false, 'error' => 'already_group_member']);
+            }
+            PCNotificationRepository::createForUser($pdo, (int)$targetId, 'group_invites', [
+                'group_id' => (string)$groupId,
+                'inviter_id' => (string)$user['id'],
+                'status' => 'added',
+            ]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+        pc_json(201, ['ok' => true, 'invited' => true, 'group_id' => (string)$groupId, 'user_id' => (string)$targetId]);
+    }
+
     if (preg_match('#^/api/v1/groups/([0-9]+)/join$#', $path, $matches) && $method === 'POST') {
                 $user = pc_require_verified_user();
                 $groupId = (int)$matches[1];
