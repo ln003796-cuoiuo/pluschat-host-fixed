@@ -82,7 +82,7 @@ final class PCGiphyService
             $fixed = is_array($images['fixed_width'] ?? null) ? $images['fixed_width'] : [];
             $items[] = [
                 'id' => (string)($gif['id'] ?? ''),
-                'title' => is_string($gif['title'] ?? null) ? mb_substr_safe($gif['title'], 120) : '',
+                'title' => is_string($gif['title'] ?? null) ? pc_giphy_substr($gif['title'], 120) : '',
                 'url' => $original,
                 'preview_url' => $preview,
                 'width' => (int)($fixed['width'] ?? 0),
@@ -102,7 +102,7 @@ final class PCGiphyService
     }
 }
 
-function mb_substr_safe(string $value, int $length): string
+function pc_giphy_substr(string $value, int $length): string
 {
     if (function_exists('mb_substr')) return mb_substr($value, 0, $length, 'UTF-8');
     return substr($value, 0, $length);
