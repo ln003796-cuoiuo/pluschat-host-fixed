@@ -25,7 +25,8 @@
 6. `register/repositories/RegistrationRepository.php`
 7. `login/services/LoginService.php`
 8. `login/repositories/LoginRepository.php`
-9. `tests/check-features.php` (нужно только для проверки кода; в рабочем API не участвует)
+9. `profile/api/Controller.php`
+10. `tests/check-features.php` (нужно только для проверки кода; в рабочем API не участвует)
 
 **Не удаляй остальные каталоги и файлы сервера.** Этот репозиторий содержит только изменённые файлы, поэтому скачивание ZIP не заменяет весь сервер.
 
