@@ -129,6 +129,21 @@ foreach ([
     }
 }
 
+$notificationRepository = (string)file_get_contents($root . '/notifications/repositories/NotificationRepository.php');
+if (!str_contains($notificationRepository, 'createForUser') || !str_contains($notificationRepository, 'preferences_json')) {
+    $errors[] = 'Preference-aware notification event creation is missing';
+}
+foreach ([
+    'messages/api/Controller.php' => 'direct_messages',
+    'friends/services/FriendService.php' => 'contact_requests',
+    'groups/api/Controller.php' => 'group_messages',
+    'channels/api/Controller.php' => 'group_messages',
+    'messages/services/ReactionService.php' => 'reactions',
+] as $relative => $kind) {
+    $source = (string)file_get_contents($root . '/' . $relative);
+    if (!str_contains($source, "'" . $kind . "'")) $errors[] = 'Notification event is not wired for: ' . $relative;
+}
+
 $rateLimitedWrites = [
     'messages/api/Controller.php' => 'message-send',
     'groups/api/Controller.php' => 'group-message-send',
