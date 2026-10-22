@@ -1,83 +1,73 @@
-## Registration and email verification
-- `POST /api/v1/auth/register` requires `email`, `phone`, `password`, and a non-empty `first_name`; `last_name` and `birth_date` are optional. A public `username` is chosen after email confirmation during profile completion.
-- A six-digit one-time code is sent to the registered email. Codes expire after 15 minutes and are stored only as a SHA-256 hash bound to the normalized email address.
-- `POST /api/v1/auth/verify` accepts `email` and `code`. Login remains blocked until email verification succeeds.
-- `POST /api/v1/auth/resend-verification` sends a replacement code for an unverified account. Responses intentionally do not reveal whether the email belongs to an account.
-- Email delivery uses PHP `mail()`; the hosting provider must have outbound mail configured and the sender domain should have valid SPF/DKIM/DMARC records. A successful CI run does not verify real-world email delivery.
+# Pluschat API — текущая серверная реализация
 
-# Pluschat API feature notes
+Все API-маршруты находятся под `/api/v1`. Запросы к защищённым маршрутам используют заголовок `Authorization: Bearer <token>`. Тело JSON-запроса должно быть корректным JSON. Ошибки API возвращаются в JSON без SQL, stack trace, паролей или ключей.
 
-Friend requests, saved messages, and polls are implemented as separate PHP modules.
+## Регистрация и вход
 
+- `POST /api/v1/auth/register`: `email`, `password`, `first_name`; `last_name` и `birth_date` необязательны. Пароль — 10–200 символов. Телефон и SMS не требуются.
+- Сервер отправляет шестизначный email-код, который действует 15 минут; в базе хранится только SHA-256-хеш кода, связанный с нормализованным email.
+- `POST /api/v1/auth/verify`: `email` и `code`.
+- `POST /api/v1/auth/resend-verification`: повторная отправка кода с ограничением частоты запросов.
+- `POST /api/v1/auth/login`: `login` (email или ник), `password`, `device_key`; `device_name` и `platform` необязательны. Email должен быть подтверждён.
+- После подтверждения email пользователь задаёт уникальный ник через `POST /api/v1/auth/profile`. Пока профиль не завершён, остальные защищённые функции недоступны.
+- `POST /api/v1/auth/me` возвращает сведения о текущем аккаунте; `POST /api/v1/auth/logout` отзывает текущий токен.
+- 2FA через TOTP необязательна: `POST /api/v1/auth/2fa/setup`, `/confirm`, `/verify` и `/disable`. При включённой 2FA обычный вход выдаёт challenge вместо access token.
 
-Static checks: `php tests/check-server.php` and `php tests/check-features.php`.
+Почта отправляется через PHP `mail()`; хостинг должен разрешать исходящую почту. Для домена отправителя рекомендуется настроить SPF, DKIM и DMARC. Успешная статическая проверка не подтверждает реальную доставку писем.
 
-## Chat organization
-- `GET /chat-preferences` — pin/archive/mute settings for conversations.
-- `POST /conversations/{conversationId}/preferences` with `pinned`, `archived`, and optional `muted_until`.
-- `GET /chat-folders` and `POST /chat-folders` with `name`.
-- `DELETE /chat-folders/{folderId}`.
-- `POST /chat-folders/{folderId}/items` with `conversation_id`.
-- `DELETE /chat-folders/{folderId}/items/{conversationId}`.
+## Профиль, контакты и безопасность
 
-Existing installations must apply `database/migrations/001_social_features.sql` and `database/migrations/002_chat_organization.sql` in order. Fresh installs get the same tables from `database/schema.sql`.
+- `GET /api/v1/auth/me`, `POST /api/v1/auth/profile`, `GET/POST /api/v1/settings` — профиль и настройки приватности.
+- `POST /api/v1/me/avatar` — загрузка аватара; `GET /api/v1/me/avatar` — получение через авторизованный API.
+- `GET /api/v1/users/search` и `GET /api/v1/search` — поиск пользователей, групп и каналов.
+- `POST /api/v1/users/{id}/block` и `/unblock` — блокировка пользователей.
+- `GET /api/v1/devices`, `POST /api/v1/devices/{id}/revoke` и `POST /api/v1/auth/sessions/revoke-others` — управление устройствами и сессиями.
+- `POST /api/v1/security/keys` регистрирует открытый ключ устройства и подписанный prekey. `GET /api/v1/security/keys/{userId}` отдаёт ключи собеседника только при допустимом личном диалоге и отсутствии блокировки.
+- `POST /api/v1/reports` — отправка жалобы. Просмотр жалоб через `GET /api/v1/admin/reports` требует записи в таблице `admin_users` с разрешённой ролью.
 
-## Stories
-- `GET /stories` — feed visible to the signed-in user.
-- `POST /stories` with an encrypted `payload`, `visibility` (`friends` or `everyone`), and optional `expires_in_hours` from 1 to 48.
-- `POST /stories/{storyId}/view` — record a view when allowed by audience and block settings.
-- `DELETE /stories/{storyId}` — delete your own story.
+## Сообщения, группы и каналы
 
-The story payload must use the `pc-e2ee-v1` envelope. This stores opaque ciphertext; it does not implement or prove the Android-side key exchange. Existing databases must also apply `database/migrations/003_stories.sql`.
+- `POST /api/v1/conversations` создаёт диалог; `GET /api/v1/conversations` возвращает список доступных диалогов.
+- `GET/POST /api/v1/conversations/{id}/messages` — история и отправка сообщений.
+- `POST /api/v1/messages/{id}/edit`, `/delete`, `/reactions`, `/reactions/remove` — редактирование, удаление и реакции.
+- `POST /api/v1/conversations/{id}/read` — отметка сообщений прочитанными.
+- `POST /api/v1/messages/{id}/attachments`, `GET /api/v1/attachments/{id}`, `POST /api/v1/attachments/{id}/delete` — вложения. Сервер принимает только клиентски зашифрованные байты с маркером `PCF1` и версией `pc-e2ee-v1`.
+- Группы: `GET/POST /api/v1/groups`, `GET /api/v1/groups/discover`, `POST /api/v1/groups/{id}/join`, `/leave`, `GET/POST /api/v1/groups/{id}/messages`.
+- Каналы: `GET/POST /api/v1/channels`, `GET /api/v1/channels/discover`, `POST /api/v1/channels/{id}/subscribe`, `GET/POST /api/v1/channels/{id}/posts`.
+- Темы: `GET/POST /api/v1/groups/{id}/topics`, `GET/POST /api/v1/channels/{id}/topics`, `GET/POST /api/v1/topics/{id}/messages`; доступ зависит от членства и роли.
+- Друзья, сохранённые сообщения, опросы, папки чатов, закрепление/архив/отключение уведомлений, истории и уведомления реализованы отдельными PHP-модулями и используют MySQL.
+- Отправка сообщений и вложений ограничивается по частоте. Личные сообщения блокируются, если один из участников заблокировал другого.
 
-## Password recovery
-- `POST /auth/password/forgot` with an email address. The response does not reveal whether the account exists.
-- The email contains a one-hour recovery link to `/password-reset.php`.
-- `POST /auth/password/reset` with token and new password is also available to API clients.
-- A successful reset revokes all existing access tokens for that account.
+### Формат шифрованного сообщения
 
-Existing installations must apply `database/migrations/004_password_recovery.sql` after the earlier migrations.
+Клиент должен отправлять поле `body` как JSON-строку с конвертом `pc-e2ee-v1`, алгоритмом `AES-256-GCM`, base64url `nonce` длиной 12 байт, `ciphertext` с тегом аутентификации и строковым `key_id`. Сервер проверяет формат и сохраняет opaque ciphertext, не расшифровывая его. Само наличие этого серверного контракта не доказывает, что Android-клиент правильно создаёт, хранит и обменивает ключи: клиентское E2EE и восстановление ключей требуют отдельной проверки.
 
-## Message actions
-- `POST /messages/{messageId}/edit` accepts a new encrypted message envelope. The author may edit for 48 hours.
-- `POST /messages/{messageId}/delete` accepts `for_everyone` as a boolean. Delete-for-everyone is author-only; delete-for-me hides the message only for the current user.
-- Apply `database/migrations/005_message_hiding.sql` on existing installations.
+## GIF-поиск (GIPHY)
 
-## Attachments and updates
-- `POST /messages/{messageId}/attachments` accepts client-encrypted bytes only (`encrypted=1`, `encryption_version=pc-e2ee-v1`); the server stores the opaque bytes and never decrypts them.
-- `GET /attachments/{attachmentId}` downloads an attachment only for a conversation member. Attachments hidden by a delete-for-me action are no longer downloadable by that user.
-- `POST /attachments/{attachmentId}/delete` lets the message author delete the attachment.
-- Direct one-to-one message sends are rejected if either participant has blocked the other.
+- `GET /api/v1/gifs/search?q=кот&limit=20&offset=0` — поиск GIF для подтверждённого пользователя.
+- Ключ читается из приватной конфигурации: `giphy_api_key` или поддерживаемый alias в приватном `confirm.php`. Он не отправляется клиенту.
+- `limit` ограничен 1–25, `offset` — 0–499, частота — 30 запросов в минуту на IP.
+- Ответ `results` содержит `id`, `title`, `url`, `preview_url`, `width`, `height`. Без ключа возвращается `gif_search_not_configured`; ошибки провайдера не раскрывают секреты.
 
-## Applying migrations to an existing installation
-Run `php database/migrate.php` using PHP CLI from the project root after `config.php` exists. The runner refuses web requests and records completed migration filenames in `schema_migrations`. Take a database backup before applying updates. A fresh installation continues to use `database/schema.sql` through the setup page.
+## Восстановление пароля
 
-## Message reactions
-- `GET /messages/{messageId}/reactions` returns reaction counts and whether the current user selected each reaction.
-- `POST /messages/{messageId}/reactions` adds a reaction; `POST /messages/{messageId}/reactions/remove` removes it. Both write routes are rate-limited and require conversation membership.
+- `POST /api/v1/auth/password/forgot` принимает email; ответ не раскрывает, существует ли аккаунт.
+- Письмо содержит одноразовую ссылку на `/password-reset.php`, срок действия — один час.
+- `POST /api/v1/auth/password/reset` также принимает token и новый пароль.
+- Успешный сброс удаляет активные access-токены аккаунта.
 
-## Maintenance
-- `php database/cleanup.php` removes expired stories, password-reset and verification tokens/codes, expired 2FA setup/challenge records, expired call-signaling records, marks stale calls as missed/ended, removes expired access tokens, and clears old rate-limit buckets. It refuses web requests. Run it daily using the hosting scheduler if available; story visibility already filters expired stories even before cleanup.
+## Аудио- и видеозвонки
 
+- `POST /api/v1/calls` с `conversation_id` и `type: "audio"|"video"` создаёт вызов для участников диалога (2–8 участников).
+- `GET /api/v1/calls/active?conversation_id=...`, `GET /api/v1/calls/{id}`, `POST /api/v1/calls/{id}/join`, `/decline`, `/end`.
+- `POST /api/v1/calls/{id}/signal` и `GET /api/v1/calls/{id}/signals?after=0` обмениваются краткоживущими SDP/ICE-сигналами.
+- PHP хранит только сигнализацию; WebRTC-медиа должно идти напрямую между устройствами или через настроенный TURN. Полный Android WebRTC UI, TURN и реальные звонки должны проверяться отдельно, поэтому наличие серверных маршрутов само по себе не означает готовность звонков к production.
 
-## Voice and video calls on the main host
-- `POST /api/v1/calls` with `{conversation_id, type:"audio"|"video"}` creates an authenticated call for conversation members (2–8 participants).
-- `GET /api/v1/calls/active?conversation_id=...` checks for an active/ringing call; `GET /api/v1/calls/{id}` returns its state and participants.
-- `POST /api/v1/calls/{id}/join`, `/decline`, and `/end` update call state.
-- `POST /api/v1/calls/{id}/signal` accepts bounded `offer`, `answer`, or `ice` payloads only between participants. `GET /api/v1/calls/{id}/signals?after=0` polls new records. Signaling records expire after 10 minutes.
-- Signaling uses the same PHP API and MySQL database. WebRTC media is intended to flow peer-to-peer and is not uploaded to PHP. TURN relay and complete Android calling UI still need integration and live testing; do not treat calls as production-ready yet.
-- Fresh installs include the call tables in `database/schema.sql`; existing installations apply `database/migrations/009_calls_signaling.sql` through the setup page or CLI migration runner.
+## База данных и обслуживание
 
-
-## Mandatory phone verification via TextBee
-- Registration requires an international phone number in E.164 format. The server sends a six-digit SMS code that expires after 10 minutes; only its hash is stored.
-- `POST /api/v1/auth/phone/verify` accepts `phone` and `code`; `POST /api/v1/auth/phone/resend` rotates the code with a 60-second resend cooldown.
-- Configure `PLUSCHAT_TEXTBEE_API_KEY` and `PLUSCHAT_TEXTBEE_DEVICE_ID` as private server environment variables, or set `textbee_api_key` and `textbee_device_id` in the server-only `config.php`. Never put the API key in this public repository or the Android APK.
-- The API call uses `POST https://api.textbee.dev/api/v1/gateway/send-sms`, the `x-api-key` header, and a `deviceId` in the JSON body. Server logs record only HTTP status and a short provider error code, not credentials, phone numbers, SMS codes, or raw responses.
-- HTTP 200 means TextBee accepted/queued the SMS; it does not guarantee delivery. The paired Android device must be enabled and online with SMS permission granted.
-
-
-## Profile completion and public nickname
-- Registration creates a reserved internal username while email/phone verification and mandatory 2FA are completed. The reserved value is never returned to clients.
-- After signing in and enabling 2FA, call `POST /api/v1/auth/profile` with `username` (3–32 Latin letters, digits or underscores) and optionally `first_name`, `last_name`, or `birth_date`. The nickname must be unique; the reserved `pc_pending_` prefix is unavailable.
-- Until a nickname is set, normal authenticated feature endpoints return `403 profile_completion_required`. The profile endpoint remains available to complete the account.
+- Основная база: MySQL `pluschat`, хост `localhost`. Секреты остаются на хостинге; не загружайте `confirm.php`, `config.php`, пароли или API-ключи в Git.
+- Существующие базы обновляются через PHP CLI: `php database/migrate.php` из корня проекта. Скрипт отказывается работать через HTTP и записывает применённые миграции в `schema_migrations`. Сначала сделайте резервную копию.
+- Для новой пустой базы используйте `database/schema.sql`, затем выполните миграции через CLI. Не импортируйте схему поверх существующей базы.
+- `php database/cleanup.php` через CLI удаляет истёкшие токены/вызовы и старые лимиты. При наличии планировщика хостинга настройте ежедневный запуск.
+- `GET /api/v1/health` проверяет подключение к БД и наличие обязательных таблиц, не выводя имена отсутствующих таблиц или секреты.
+- Статические проверки: `php tests/check-server.php` и `php tests/check-features.php`. Они не заменяют интеграционные тесты на конкретном хостинге.
