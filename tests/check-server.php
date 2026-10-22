@@ -118,6 +118,9 @@ $cleanupSource = (string)file_get_contents($root . '/database/cleanup.php');
 foreach (['two_factor_challenges', 'call_signals', 'password_reset_tokens', 'auth_tokens'] as $expiredTable) {
     if (!str_contains($cleanupSource, $expiredTable)) $errors[] = 'Cleanup missing expired records: ' . $expiredTable;
 }
+if (!str_contains($cleanupSource, 'birthday_user_id') || !str_contains($cleanupSource, "'birthdays'")) {
+    $errors[] = 'Daily privacy-aware birthday reminder generation is missing';
+}
 
 foreach ([
     'messages/api/Controller.php', 'groups/api/Controller.php',
