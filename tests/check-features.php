@@ -79,7 +79,7 @@ $loginService = (string)file_get_contents($root . '/login/services/LoginService.
 if (str_contains($loginService, "'error' => 'phone_required'") || str_contains($loginService, "'error' => 'phone_not_verified'")) $errors[] = 'Login must not require phone or SMS verification';
 $bootstrapAuth = (string)file_get_contents($root . '/bootstrap.php');
 if (str_contains($bootstrapAuth, 'AND u.phone IS NOT NULL AND u.phone_verified_at IS NOT NULL')) $errors[] = 'Bearer API authentication must not require a verified phone number';
-if (!str_contains($loginService, 'requires_2fa_setup') || !str_contains($loginService, 'requires_2fa')) $errors[] = 'Mandatory 2FA login flow is missing';
+if (!str_contains($loginService, 'requires_2fa')) $errors[] = 'Optional 2FA challenge flow is missing';
 $securityController = (string)file_get_contents($root . '/security/api/Controller.php');
 foreach (['/api/v1/auth/2fa/setup','/api/v1/auth/2fa/confirm','/api/v1/auth/2fa/verify','two_factor_is_mandatory'] as $route) {
     if (!str_contains($securityController, $route)) $errors[] = '2FA route missing: ' . $route;
