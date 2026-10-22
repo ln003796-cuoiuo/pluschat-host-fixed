@@ -10,14 +10,14 @@
 - `POST /api/v1/auth/resend-verification`: повторная отправка кода с ограничением частоты запросов.
 - `POST /api/v1/auth/login`: `login` (email или ник), `password`, `device_key`; `device_name` и `platform` необязательны. Email должен быть подтверждён.
 - После подтверждения email пользователь задаёт уникальный ник через `POST /api/v1/auth/profile`. Пока профиль не завершён, остальные защищённые функции недоступны.
-- `POST /api/v1/auth/me` возвращает сведения о текущем аккаунте; `POST /api/v1/auth/logout` отзывает текущий токен.
+- `GET /api/v1/auth/me` возвращает сведения о текущем аккаунте; `POST /api/v1/auth/logout` отзывает текущий токен.
+- `POST /api/v1/auth/profile`, `GET/POST /api/v1/settings` — профиль и настройки приватности.
 - 2FA через TOTP необязательна: `POST /api/v1/auth/2fa/setup`, `/confirm`, `/verify` и `/disable`. При включённой 2FA обычный вход выдаёт challenge вместо access token.
 
 Почта отправляется через PHP `mail()`; хостинг должен разрешать исходящую почту. Для домена отправителя рекомендуется настроить SPF, DKIM и DMARC. Успешная статическая проверка не подтверждает реальную доставку писем.
 
 ## Профиль, контакты и безопасность
 
-- `GET /api/v1/auth/me`, `POST /api/v1/auth/profile`, `GET/POST /api/v1/settings` — профиль и настройки приватности.
 - `POST /api/v1/me/avatar` — загрузка аватара; `GET /api/v1/me/avatar` — получение через авторизованный API.
 - `GET /api/v1/users/search` и `GET /api/v1/search` — поиск пользователей, групп и каналов.
 - `POST /api/v1/users/{id}/block` и `/unblock` — блокировка пользователей.
