@@ -7,6 +7,7 @@ declare(strict_types=1);
  * are loaded by public/index.php through bootstrap.php.
  */
 require_once dirname(__DIR__) . '/services/ChannelService.php';
+require_once dirname(__DIR__, 2) . '/notifications/repositories/NotificationRepository.php';
 
 function pc_channels_dispatch(string $path, string $method): bool
 {
@@ -94,8 +95,26 @@ function pc_channels_dispatch(string $path, string $method): bool
                 $data = pc_input();
                 $envelope = pc_encrypted_envelope($data['body'] ?? null);
                 if (!$envelope) pc_json(422, ['ok' => false, 'error' => 'encrypted_message_envelope_required', 'format' => 'pc-e2ee-v1']);
-                pc_db()->prepare('INSERT INTO channel_posts (channel_id, sender_id, body, body_encrypted, encryption_version) VALUES (?, ?, ?, 1, ?)')->execute([$channelId, $user['id'], $envelope['body'], $envelope['version']]);
-                pc_json(201, ['ok' => true, 'post' => ['id' => (string)pc_db()->lastInsertId(), 'channel_id' => (string)$channelId, 'sender_id' => (string)$user['id'], 'body' => $envelope['body'], 'encrypted' => true, 'encryption_version' => $envelope['version'], 'created_at' => gmdate('Y-m-d H:i:s')]]);
+                $pdo = pc_db();
+                $pdo->beginTransaction();
+                try {
+                    $pdo->prepare('INSERT INTO channel_posts (channel_id, sender_id, body, body_encrypted, encryption_version) VALUES (?, ?, ?, 1, ?)')->execute([$channelId, $user['id'], $envelope['body'], $envelope['version']]);
+                    $postId = (int)$pdo->lastInsertId();
+                    $recipients = $pdo->prepare('SELECT user_id FROM channel_members WHERE channel_id = ? AND user_id <> ?');
+                    $recipients->execute([$channelId, $user['id']]);
+                    foreach ($recipients->fetchAll() as $recipient) {
+                        PCNotificationRepository::createForUser($pdo, (int)$recipient['user_id'], 'group_messages', [
+                            'channel_id' => (string)$channelId,
+                            'post_id' => (string)$postId,
+                            'sender_id' => (string)$user['id'],
+                        ]);
+                    }
+                    $pdo->commit();
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    throw $e;
+                }
+                pc_json(201, ['ok' => true, 'post' => ['id' => (string)$postId, 'channel_id' => (string)$channelId, 'sender_id' => (string)$user['id'], 'body' => $envelope['body'], 'encrypted' => true, 'encryption_version' => $envelope['version'], 'created_at' => gmdate('Y-m-d H:i:s')]]);
             }
     return false;
 }
