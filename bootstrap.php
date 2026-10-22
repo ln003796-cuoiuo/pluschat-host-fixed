@@ -1,8 +1,54 @@
 <?php
 declare(strict_types=1);
 
+/*
+ * Prefer the standard private config.php. For installations that still keep
+ * private settings in confirm.php, accept a returned config array or common
+ * legacy variable names. Never copy either file or its secrets to Git.
+ */
 $configFile = __DIR__ . '/config.php';
-$config = is_file($configFile) ? require $configFile : [];
+$config = [];
+if (is_file($configFile)) {
+    $loadedConfig = require $configFile;
+    if (is_array($loadedConfig)) {
+        $config = $loadedConfig;
+    }
+} else {
+    $legacyConfigFile = __DIR__ . '/confirm.php';
+    if (is_file($legacyConfigFile)) {
+        $legacyResult = require $legacyConfigFile;
+        if (is_array($legacyResult)) {
+            $config = $legacyResult;
+        } elseif (isset($config) && is_array($config) && $config !== []) {
+            // A legacy file may assign a $config array instead of returning it.
+        }
+
+        $legacyVariables = get_defined_vars();
+        $legacyAliases = [
+            'db_host' => ['db_host', 'DB_HOST', 'host', 'hostname', 'servername'],
+            'db_name' => ['db_name', 'DB_NAME', 'dbname', 'database'],
+            'db_user' => ['db_user', 'DB_USER', 'username', 'db_username'],
+            'db_password' => ['db_password', 'DB_PASSWORD', 'password', 'db_pass'],
+            'mail_from' => ['mail_from', 'MAIL_FROM', 'email_from'],
+            'app_base_url' => ['app_base_url', 'APP_BASE_URL', 'base_url'],
+            'allowed_origins' => ['allowed_origins', 'ALLOWED_ORIGINS'],
+            'giphy_api_key' => ['giphy_api_key', 'GIPHY_API_KEY', 'giphy_key'],
+        ];
+        foreach ($legacyAliases as $configKey => $aliases) {
+            if (array_key_exists($configKey, $config) && $config[$configKey] !== '') {
+                continue;
+            }
+            foreach ($aliases as $alias) {
+                if (array_key_exists($alias, $legacyVariables)
+                    && (is_string($legacyVariables[$alias]) || is_array($legacyVariables[$alias]))
+                    && $legacyVariables[$alias] !== '') {
+                    $config[$configKey] = $legacyVariables[$alias];
+                    break;
+                }
+            }
+        }
+    }
+}
 
 function pc_config(string $key, mixed $default = null): mixed {
     global $config;
